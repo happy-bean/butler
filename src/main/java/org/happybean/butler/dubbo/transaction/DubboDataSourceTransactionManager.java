@@ -7,6 +7,9 @@ import org.springframework.transaction.support.DefaultTransactionStatus;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
 
 
 /**
@@ -14,7 +17,20 @@ import java.sql.SQLException;
  * @date 2019-03-31
  * @description
  **/
+@Deprecated
 public class DubboDataSourceTransactionManager extends DataSourceTransactionManager {
+
+    private final Map<String, Connection> connectionMap = new HashMap<>();
+
+    public void addConnection(String transactionId, Connection connection) {
+        connectionMap.putIfAbsent(transactionId, connection);
+    }
+
+    public void removeConnection(String transactionId) {
+        if (connectionMap.containsKey(transactionId)) {
+            connectionMap.remove(transactionId);
+        }
+    }
 
     @Override
     protected void doCommit(DefaultTransactionStatus status) {
@@ -29,5 +45,9 @@ public class DubboDataSourceTransactionManager extends DataSourceTransactionMana
         } catch (SQLException var5) {
             throw new TransactionSystemException("Could not commit JDBC transaction", var5);
         }
+    }
+
+    public static String getGroupId() {
+        return UUID.randomUUID().toString();
     }
 }
