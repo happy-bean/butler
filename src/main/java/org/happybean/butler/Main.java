@@ -1,4 +1,4 @@
-package org.happybean.butler.dubbo;
+package org.happybean.butler;
 
 /**
  * @author wgt

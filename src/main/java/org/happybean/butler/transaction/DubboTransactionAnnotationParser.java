@@ -1,6 +1,6 @@
-package org.happybean.butler.dubbo.transaction;
+package org.happybean.butler.transaction;
 
-import org.happybean.butler.dubbo.annition.DubboTransactional;
+import org.happybean.butler.annition.BuTransactional;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.core.annotation.AnnotationAttributes;
 import org.springframework.core.annotation.AnnotationUtils;
@@ -15,6 +15,7 @@ import java.lang.reflect.AnnotatedElement;
  * @date 2019-03-31
  * @description
  **/
+@Deprecated
 public class DubboTransactionAnnotationParser extends SpringTransactionAnnotationParser {
 
     @Override
@@ -23,9 +24,9 @@ public class DubboTransactionAnnotationParser extends SpringTransactionAnnotatio
         if (ae.isAnnotationPresent(Transactional.class)) {
             attributes = AnnotatedElementUtils
                     .getAnnotationAttributes(ae, Transactional.class.getName());
-        } else if (ae.isAnnotationPresent(DubboTransactional.class)) {
+        } else if (ae.isAnnotationPresent(BuTransactional.class)) {
             attributes = AnnotatedElementUtils
-                    .getAnnotationAttributes(ae, DubboTransactional.class.getName());
+                    .getAnnotationAttributes(ae, BuTransactional.class.getName());
         }
 
         if (attributes != null) {
@@ -35,7 +36,7 @@ public class DubboTransactionAnnotationParser extends SpringTransactionAnnotatio
         }
     }
 
-    public TransactionAttribute parseTransactionAnnotation(DubboTransactional anno) {
+    public TransactionAttribute parseTransactionAnnotation(BuTransactional anno) {
         return parseTransactionAnnotation(AnnotationUtils.getAnnotationAttributes(anno, false, false));
     }
 }

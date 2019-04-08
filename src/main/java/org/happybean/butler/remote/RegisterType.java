@@ -1,4 +1,4 @@
-package org.happybean.butler.dubbo.remote;
+package org.happybean.butler.remote;
 
 /**
  * @author wgt
@@ -6,8 +6,5 @@ package org.happybean.butler.dubbo.remote;
  * @description
  **/
 public enum RegisterType {
-
-    SIMPLE,
-    ZOOKEEPER,
     REDIS;
 }

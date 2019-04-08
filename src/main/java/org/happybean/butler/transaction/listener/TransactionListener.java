@@ -1,4 +1,4 @@
-package org.happybean.butler.dubbo.transaction.listener;
+package org.happybean.butler.transaction.listener;
 
 /**
  * @author wgt

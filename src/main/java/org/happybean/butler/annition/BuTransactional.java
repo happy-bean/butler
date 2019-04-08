@@ -1,6 +1,6 @@
-package org.happybean.butler.dubbo.annition;
+package org.happybean.butler.annition;
 
-import org.happybean.butler.dubbo.remote.RegisterType;
+import org.happybean.butler.remote.RegisterType;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Propagation;
 
@@ -15,7 +15,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 @Documented
-public @interface DubboTransactional {
+public @interface BuTransactional {
 
     String value() default "transactionManager";
 
@@ -39,5 +39,5 @@ public @interface DubboTransactional {
 
     boolean remote() default true;
 
-    RegisterType register() default RegisterType.SIMPLE;
+    RegisterType register() default RegisterType.REDIS;
 }

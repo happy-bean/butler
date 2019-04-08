@@ -1,4 +1,4 @@
-package org.happybean.butler.dubbo.connection;
+package org.happybean.butler.connection;
 
 import java.sql.*;
 import java.util.Map;
@@ -10,32 +10,28 @@ import java.util.concurrent.Executor;
  * @date 2019-03-31
  * @description
  **/
-public class DubboConnection implements Connection {
-
+public class BuConnection implements Connection {
 
     private Connection connection;
 
-    private DubboConnection dubboConnection;
-
-    public DubboConnection(Connection connection) {
+    public BuConnection(Connection connection) {
         this.connection = connection;
     }
 
     @Override
     public void commit() throws SQLException {
-        dubboConnection
-        //wait commond
+        //wait
+        System.out.println("wait ...");
     }
 
     @Override
     public void rollback() throws SQLException {
-        //wait commond
-
+        connection.rollback();
     }
 
     @Override
     public void rollback(Savepoint savepoint) throws SQLException {
-        //wait
+        connection.rollback(savepoint);
     }
 
     @Override

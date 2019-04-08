@@ -1,11 +1,12 @@
-package org.happybean.butler.dubbo.transaction.aspect;
+package org.happybean.butler.transaction.aspect;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.happybean.butler.dubbo.connection.DubboConnection;
+import org.happybean.butler.connection.BuConnection;
 
 import java.sql.Connection;
+import java.sql.SQLException;
 
 /**
  * @author wgt
@@ -13,16 +14,18 @@ import java.sql.Connection;
  * @description
  **/
 @Aspect
-public class DubboConnectionAspect {
+public class ConnectionAspect {
 
     @Around("execution(* javax.sql.DataSource.getConnection(..))")
-    public Connection around(ProceedingJoinPoint point) {
+    public Connection around(ProceedingJoinPoint point) throws SQLException {
         Connection connection = null;
         try {
             connection = (Connection) point.proceed();
         } catch (Throwable throwable) {
             throwable.printStackTrace();
         }
-        return new DubboConnection(connection);
+        BuConnection buConnection = new BuConnection(connection);
+        buConnection.setAutoCommit(false);
+        return buConnection;
     }
 }

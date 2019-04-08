@@ -1,7 +1,6 @@
-package org.happybean.butler.dubbo.transaction.config;
+package org.happybean.butler.transaction.config;
 
-import org.happybean.butler.dubbo.transaction.DubboTransactionAnnotationParser;
-import org.happybean.butler.dubbo.transaction.DubboTransactionInterceptor;
+import org.happybean.butler.transaction.DubboTransactionAnnotationParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.Bean;
@@ -15,7 +14,6 @@ import org.springframework.transaction.config.TransactionManagementConfigUtils;
 import org.springframework.transaction.event.TransactionalEventListenerFactory;
 import org.springframework.transaction.interceptor.BeanFactoryTransactionAttributeSourceAdvisor;
 import org.springframework.transaction.interceptor.TransactionAttributeSource;
-import org.springframework.transaction.interceptor.TransactionInterceptor;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Collection;
@@ -35,7 +33,6 @@ public class DubboTransactionManagementConfiguration {
     public BeanFactoryTransactionAttributeSourceAdvisor transactionAdvisor() {
         BeanFactoryTransactionAttributeSourceAdvisor advisor = new BeanFactoryTransactionAttributeSourceAdvisor();
         advisor.setTransactionAttributeSource(transactionAttributeSource());
-        advisor.setAdvice(transactionInterceptor());
         advisor.setOrder(Ordered.LOWEST_PRECEDENCE);
         return advisor;
     }
@@ -59,15 +56,5 @@ public class DubboTransactionManagementConfiguration {
         }
         TransactionManagementConfigurer configurer = configurers.iterator().next();
         this.txManager = configurer.annotationDrivenTransactionManager();
-    }
-    @Bean
-    @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
-    public TransactionInterceptor transactionInterceptor() {
-        TransactionInterceptor interceptor = new DubboTransactionInterceptor();
-        interceptor.setTransactionAttributeSource(transactionAttributeSource());
-        if (this.txManager != null) {
-            interceptor.setTransactionManager(this.txManager);
-        }
-        return interceptor;
     }
 }
