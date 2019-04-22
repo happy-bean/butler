@@ -11,7 +11,7 @@ import redis.clients.jedis.Jedis;
  **/
 public class RemoterFactory {
 
-    private int timeOut = 1000;
+    private final int keyTimeOut = 1000;
 
     @Autowired
     private Jedis jedis;
@@ -26,7 +26,7 @@ public class RemoterFactory {
 
     private Remoter redisRemoter() {
         Remoter remoter = tx -> {
-            jedis.setex(Remote.REMOTE_TX, timeOut, serialize(tx));
+            jedis.setex(Remote.REMOTE_TX, keyTimeOut, serialize(tx));
         };
         return remoter;
     }

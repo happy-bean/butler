@@ -1,5 +1,8 @@
 package org.happybean.butler.connection;
 
+import org.happybean.butler.transaction.BuTransactionManager;
+import org.happybean.butler.transaction.LocalTransaction;
+
 import java.sql.*;
 import java.util.Map;
 import java.util.Properties;
@@ -18,15 +21,24 @@ public class BuConnection implements Connection {
         this.connection = connection;
     }
 
+    private final ThreadLocal<LocalTransaction> localTransaction = new ThreadLocal<>();
+
     @Override
     public void commit() throws SQLException {
-        //wait
+        String groupId = BuTransactionManager.getGroupId();
+        LocalTransaction transaction = new LocalTransaction(
+                BuTransactionManager.getTransactionId(groupId),
+                groupId,
+                connection
+        );
+        localTransaction.set(transaction);
         System.out.println("wait ...");
     }
 
     @Override
     public void rollback() throws SQLException {
-        connection.rollback();
+        //connection.rollback();
+        System.out.println("wait ...");
     }
 
     @Override
