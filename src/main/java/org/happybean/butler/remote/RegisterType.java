@@ -6,5 +6,6 @@ package org.happybean.butler.remote;
  * @description
  **/
 public enum RegisterType {
+
     REDIS;
 }

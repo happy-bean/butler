@@ -19,12 +19,6 @@ public class BuConnection implements Connection {
 
     public BuConnection(Connection connection) {
         this.connection = connection;
-    }
-
-    private final ThreadLocal<LocalTransaction> localTransaction = new ThreadLocal<>();
-
-    @Override
-    public void commit() throws SQLException {
         String groupId = BuTransactionManager.getGroupId();
         LocalTransaction transaction = new LocalTransaction(
                 BuTransactionManager.getTransactionId(groupId),
@@ -32,12 +26,17 @@ public class BuConnection implements Connection {
                 connection
         );
         localTransaction.set(transaction);
+    }
+
+    private final ThreadLocal<LocalTransaction> localTransaction = new ThreadLocal<>();
+
+    @Override
+    public void commit() throws SQLException {
         System.out.println("wait ...");
     }
 
     @Override
     public void rollback() throws SQLException {
-        //connection.rollback();
         System.out.println("wait ...");
     }
 

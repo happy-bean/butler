@@ -1,5 +1,6 @@
 package org.happybean.butler.transaction.aspect;
 
+import com.alibaba.dubbo.rpc.RpcContext;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -10,11 +11,10 @@ import org.happybean.butler.remote.RemoteTx;
 import org.happybean.butler.remote.TxCommand;
 import org.happybean.butler.transaction.BuTransactionManager;
 import org.happybean.butler.transaction.LocalTransaction;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.Ordered;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.lang.reflect.Method;
+import java.sql.Connection;
 import java.sql.SQLException;
 
 
@@ -26,9 +26,6 @@ import java.sql.SQLException;
 @Aspect
 public class TransactionAspect implements Ordered {
 
-    @Autowired
-    private BuTransactionManager dubboTransactionManager;
-
     private final ThreadLocal<LocalTransaction> localTransaction = new ThreadLocal<>();
 
     @Pointcut("@annotation(org.happybean.butler.annition.BuTransactional)")
@@ -36,33 +33,67 @@ public class TransactionAspect implements Ordered {
 
     }
 
+    public void doCommit(Connection connection, BuTransactional buTransactional) throws SQLException {
+        Object groupIdO = RpcContext.getContext().getAttachments().get("GROUP_ID");
+        String groupId = null;
+        if (groupIdO != null) {
+            groupId = (String) groupIdO;
+            String transactionId = BuTransactionManager.getTransactionId(groupId);
+            LocalTransaction localTransaction = new LocalTransaction(transactionId, groupId, connection);
+            BuTransactionManager.addTransactional(localTransaction);
+        } else {
+            connection.commit();
+            groupId = BuTransactionManager.getGroupId();
+        }
+        RemoteTx remoteTx = BuTransactionManager.createRemoteTx();
+        String transactionId = BuTransactionManager.getTransactionId(groupId);
+        remoteTx.setTransactionId(transactionId);
+        remoteTx.setGroupId(groupId);
+        remoteTx.setCommand(TxCommand.COMMIT);
+        doRemote(buTransactional, remoteTx);
+    }
+
+
+    public void doRollBack(Connection connection, BuTransactional buTransactional) throws SQLException {
+        Object groupIdO = RpcContext.getContext().getAttachments().get("GROUP_ID");
+        String groupId = null;
+        if (groupIdO != null) {
+            groupId = (String) groupIdO;
+            String transactionId = BuTransactionManager.getTransactionId(groupId);
+            LocalTransaction localTransaction = new LocalTransaction(transactionId, groupId, connection);
+            BuTransactionManager.addTransactional(localTransaction);
+        } else {
+            connection.commit();
+            groupId = BuTransactionManager.getGroupId();
+        }
+        RemoteTx remoteTx = BuTransactionManager.createRemoteTx();
+        String transactionId = BuTransactionManager.getTransactionId(groupId);
+        remoteTx.setTransactionId(transactionId);
+        remoteTx.setGroupId(groupId);
+        remoteTx.setCommand(TxCommand.ROLLBACK);
+        doRemote(buTransactional, remoteTx);
+    }
+
+    public void doRemote(BuTransactional buTransactional, RemoteTx remoteTx) {
+        if (buTransactional.remote()) {
+            Remoter remoter = RemoterFactory.getRemoter(buTransactional.register());
+
+            remoter.sendRemoter(remoteTx);
+        }
+    }
+
     @Around("pointcut()")
     public void around(ProceedingJoinPoint point) throws SQLException {
         MethodSignature signature = (MethodSignature) point.getSignature();
         Method method = signature.getMethod();
         BuTransactional buTransactional = method.getAnnotation(BuTransactional.class);
-        if (buTransactional.remote() == true) {
-            Remoter remoter = RemoterFactory.getRemoter(buTransactional.register());
-            RemoteTx remoteTx = BuTransactionManager.createRemoteTx();
-            LocalTransaction localTransaction = this.localTransaction.get();
-            remoteTx.setGroupId(localTransaction.getGroupId());
-            try {
-                //commit
-                localTransaction.getConnection().commit();
-                point.proceed();
-                remoteTx.setCommand(TxCommand.COMMIT);
-            } catch (Throwable throwable) {
-                //roll back
-                localTransaction.getConnection().rollback();
-                remoteTx.setCommand(TxCommand.ROLLBACK);
-            }
-            remoter.sendRemoter(remoteTx);
-        } else {
-            try {
-                point.proceed();
-            } catch (Throwable throwable) {
-                throwable.printStackTrace();
-            }
+        LocalTransaction localTransaction = this.localTransaction.get();
+        Connection connection = localTransaction.getConnection();
+        try {
+            point.proceed();
+            doCommit(connection, buTransactional);
+        } catch (Throwable throwable) {
+            doRollBack(connection, buTransactional);
         }
     }
 

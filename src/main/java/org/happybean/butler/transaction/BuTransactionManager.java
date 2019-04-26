@@ -1,14 +1,11 @@
 package org.happybean.butler.transaction;
 
-import org.happybean.butler.remote.BuTransactional;
 import org.happybean.butler.remote.RemoteTx;
 
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author wgt
@@ -17,43 +14,50 @@ import java.util.UUID;
  **/
 public class BuTransactionManager {
 
-    private static final Map<String, BuTransactional> connectionMap = new HashMap<>();
+    //group_id
+    private static final Map<String, List<LocalTransaction>> LOCAL_TRANSACTIONS = new ConcurrentHashMap<>();
 
-    public static void addTransactional(String transactionId, BuTransactional transactional) {
-        connectionMap.putIfAbsent(transactionId, transactional);
-    }
-
-    public static void removeTransactional(String transactionId) {
-        if (connectionMap.containsKey(transactionId)) {
-            connectionMap.remove(transactionId);
+    public static void addTransactional(LocalTransaction transaction) {
+        if (LOCAL_TRANSACTIONS.containsKey(transaction.getGroupId())) {
+            LOCAL_TRANSACTIONS.get(transaction.getGroupId()).add(transaction);
+        } else {
+            ArrayList<LocalTransaction> localTransactions = new ArrayList<>();
+            localTransactions.add(transaction);
+            LOCAL_TRANSACTIONS.put(transaction.getGroupId(), localTransactions);
         }
     }
 
-    protected void doCommit(String groupId) throws SQLException {
-        Collection<BuTransactional> transactionals = connectionMap.values();
+    private static void removeTransactional(String transactionId) {
+        if (LOCAL_TRANSACTIONS.containsKey(transactionId)) {
+            LOCAL_TRANSACTIONS.remove(transactionId);
+        }
+    }
 
-        for (BuTransactional transactional : transactionals) {
-            if (transactional.getGroupId().equals(groupId)) {
-                transactional.getConnection().commit();
-                connClose(transactional.getConnection());
-                BuTransactionManager.removeTransactional(transactional.getTransactionId());
+    public static void doCommit(String groupId) throws SQLException {
+        if (LOCAL_TRANSACTIONS.containsKey(groupId)) {
+            List<LocalTransaction> localTransactions = LOCAL_TRANSACTIONS.get(groupId);
+            for (LocalTransaction transaction : localTransactions) {
+                Connection connection = transaction.getConnection();
+                connection.commit();
+                connClose(connection);
             }
+            removeTransactional(groupId);
         }
     }
 
-    protected void doRollBack(String groupId) throws SQLException {
-        Collection<BuTransactional> transactionals = connectionMap.values();
-
-        for (BuTransactional transactional : transactionals) {
-            if (transactional.getGroupId().equals(groupId)) {
-                transactional.getConnection().rollback();
-                connClose(transactional.getConnection());
-                BuTransactionManager.removeTransactional(transactional.getTransactionId());
+    public static void doRollBack(String groupId) throws SQLException {
+        if (LOCAL_TRANSACTIONS.containsKey(groupId)) {
+            List<LocalTransaction> localTransactions = LOCAL_TRANSACTIONS.get(groupId);
+            for (LocalTransaction transaction : localTransactions) {
+                Connection connection = transaction.getConnection();
+                connection.rollback();
+                connClose(connection);
             }
+            removeTransactional(groupId);
         }
     }
 
-    protected void connClose(Connection connection) throws SQLException {
+    protected static void connClose(Connection connection) throws SQLException {
         connection.close();
     }
 

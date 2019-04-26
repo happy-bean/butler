@@ -7,5 +7,5 @@ package org.happybean.butler.remote;
  **/
 public class Remote {
 
-    public static final String REMOTE_TX = "REMOTE_TX";
+    public static final String BU_TX = "BU_TX";
 }
